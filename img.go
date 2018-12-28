@@ -13,8 +13,8 @@ import (
 type Draw struct {
 	rgba  *image.RGBA
 	color color.Color
-	out   bytes.Buffer // image output
-	src   image.Image  // image source
+	out   bytes.Buffer // output buffer
+	src   image.Image  // source image
 }
 
 // New struct
@@ -24,8 +24,8 @@ func NewDraw(src io.Reader) (d *Draw, err error) {
 		return
 	}
 	d = &Draw{
-		rgba:  image.NewRGBA(i.Bounds()),
-		color: color.Black, // default line color
+		rgba:  image.NewRGBA(i.Bounds()), // initialise a rgba buffer with hight and width of source image
+		color: color.Black,               // default line color
 		src:   i,
 	}
 	return
@@ -39,15 +39,18 @@ func (d *Draw) SetColor(c color.Color) *Draw {
 
 // Draw a rectangle
 func (d *Draw) DrawRect(r image.Rectangle, thickness int) *Draw {
+	// Put source image into rgba buffer
 	draw.Draw(d.rgba, d.rgba.Bounds(), d.src, d.src.Bounds().Min, draw.Over)
+	// Draw retangles
 	for i := 0; i < thickness; i++ {
 		d.rect(r.Min.X-i, r.Min.Y-i, r.Max.X+i, r.Max.Y+i)
 	}
+	// Put rgba buffer into output buffer
 	jpeg.Encode(bufio.NewWriter(&d.out), d.rgba, &jpeg.Options{Quality: 100})
 	return d
 }
 
-// Output bytes of processed image
+// Output buffer in byte
 func (d *Draw) OutputBytes() []byte {
 	return d.out.Bytes()
 }
